@@ -2,18 +2,25 @@ import React, { useState, useRef, useEffect } from "react";
 
 const SignToTextPage = () => {
   const [cameraOn, setCameraOn] = useState(false);
-  const [translatedText] = useState("Hello, how are you?");
+  const [selectedLang, setSelectedLang] = useState("en");
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  // Example translations (you can replace with API call)
+  const translations: Record<string, string> = {
+    en: "Hello, how are you?",
+    hi: "नमस्ते, आप कैसे हैं?",
+    ta: "வணக்கம், நீங்கள் எப்படி இருக்கிறீர்கள்?",
+    fr: "Bonjour, comment ça va?",
+    es: "Hola, ¿cómo estás?",
+  };
 
   // Handle camera open
   const handleOpenCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       });
 
@@ -54,7 +61,8 @@ const SignToTextPage = () => {
 
   // Read aloud function
   const handleReadAloud = () => {
-    const speech = new SpeechSynthesisUtterance(translatedText);
+    const speech = new SpeechSynthesisUtterance(translations[selectedLang]);
+    speech.lang = selectedLang; // Important: controls voice language
     window.speechSynthesis.speak(speech);
   };
 
@@ -101,8 +109,22 @@ const SignToTextPage = () => {
         {/* Right Side - Translated Text */}
         <div className="bg-gray-800 rounded-2xl shadow-lg p-6 flex flex-col items-center justify-center text-center">
           <h2 className="text-2xl font-bold mb-4 text-yellow-400">Translated Text</h2>
+
+          {/* Language Selector */}
+          <select
+            value={selectedLang}
+            onChange={(e) => setSelectedLang(e.target.value)}
+            className="mb-4 bg-gray-700 text-white px-4 py-2 rounded-lg"
+          >
+            <option value="en">English</option>
+            <option value="hi">Hindi</option>
+            <option value="ta">Tamil</option>
+            <option value="fr">French</option>
+            <option value="es">Spanish</option>
+          </select>
+
           <div className="bg-gray-700 p-4 rounded-lg w-full h-40 flex items-center justify-center text-xl text-white mb-6">
-            {translatedText}
+            {translations[selectedLang]}
           </div>
           <button
             onClick={handleReadAloud}

@@ -40,7 +40,10 @@ const HeroSection = () => {
           <FaLanguage className="text-5xl text-yellow-400 mb-4" />
           <h3 className="text-xl font-semibold text-white">Reverse Translation</h3>
           <p className="text-gray-400 mb-6">Customizable avatars for better interaction.</p>
-          <button className="bg-yellow-400 text-gray-900 font-semibold px-4 py-2 rounded-lg hover:bg-yellow-300 transition">
+          <button 
+            className="bg-yellow-400 text-gray-900 font-semibold px-4 py-2 rounded-lg hover:bg-yellow-300 transition"
+            onClick={() => navigate('/text-to-sign')}
+          >
             Explore More
           </button>
         </div>
