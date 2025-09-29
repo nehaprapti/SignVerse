@@ -1,16 +1,17 @@
-import { BrowserRouter as Router, Routes, Route } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import './App.css'
-
-// Import HeroSection
 import HeroSection from './sections/HeroSection'
+import SignToTextPage from "./sections/SignToTextPage";
 
 function App() {
   
   return (
-    <div>
-      <HeroSection />
-    </div>
-      
+   <Router>
+      <Routes>
+        <Route path="/" element={<HeroSection />} />
+        <Route path="/sign-to-text" element={<SignToTextPage />} />
+      </Routes>
+    </Router> 
   )
 }
 

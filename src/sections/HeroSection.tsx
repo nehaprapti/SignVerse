@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from 'react-router-dom';
 import {
   FaHands,
   FaSmile,
@@ -9,6 +10,8 @@ import {
 } from "react-icons/fa";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
+
   return (
     <section className="bg-gray-900 text-white min-h-screen w-full flex flex-col justify-center items-center px-6 text-center">
       {/* Heading */}
@@ -27,7 +30,7 @@ const HeroSection = () => {
           <FaHands className="text-5xl text-yellow-400 mb-4" />
           <h3 className="text-xl font-semibold text-white">Multilingual Recognition</h3>
           <p className="text-gray-400 mb-6">Supports ASL, ISL, BSL, and more.</p>
-          <button className="bg-yellow-400 text-gray-900 font-semibold px-4 py-2 rounded-lg hover:bg-yellow-300 transition">
+          <button className="bg-yellow-400 text-gray-900 font-semibold px-4 py-2 rounded-lg hover:bg-yellow-300 transition" onClick={() => navigate('/sign-to-text')}>
             Explore More
           </button>
         </div>
