@@ -1,15 +1,101 @@
 import React, { useState } from 'react';
 import { FaPlay, FaPause, FaRedo } from 'react-icons/fa';
+import PoseAvatarViewer from "../components/PoseAvatarViewer";
+import femaleGLB from '../assets/male.glb'
+import { Canvas } from '@react-three/fiber'
+import { Suspense } from 'react'
+
+function CanvasWrapper({ children }: { children: any }) {
+  const [reloadKey, setReloadKey] = React.useState(0)
+
+  const handleContextLost = React.useCallback((e: Event) => {
+    // Prevent default to allow restoration and remount the canvas
+    e.preventDefault()
+    console.warn('WebGL context lost, remounting canvas...')
+    setReloadKey((k) => k + 1)
+  }, [])
+
+  const onCreated = React.useCallback((state: any) => {
+    const el = state.gl?.domElement
+    if (!el) return
+
+    // Throttle device pixel ratio to reduce GPU load and avoid context loss on weaker devices
+    try {
+      const deviceDPR = window.devicePixelRatio || 1
+      // cap DPR to a reasonable value (1.5) and reduce a bit for safety
+      const capped = Math.min(deviceDPR, 1.5) * 0.9
+      state.gl.setPixelRatio(capped)
+      // optionally disable antialias for lower cost
+      if (state.gl.getContext) {
+        const ctx = state.gl.getContext()
+        // no-op fallback; some contexts may not expose attributes
+      }
+      console.log(`[Canvas] set pixel ratio to ${capped.toFixed(2)}`)
+    } catch (e) {
+      console.warn('Could not set pixel ratio on GL context', e)
+    }
+
+    // Throttle device pixel ratio to reduce GPU load and avoid context loss on weaker devices
+    try {
+      const deviceDPR = window.devicePixelRatio || 1
+      // cap DPR to a reasonable value (1.5) and reduce a bit for safety
+      const capped = Math.min(deviceDPR, 1.5) * 0.9
+      state.gl.setPixelRatio(capped)
+      // optionally disable antialias for lower cost - no-op placeholder removed to satisfy lint
+      console.log(`[Canvas] set pixel ratio to ${capped.toFixed(2)}`)
+    } catch (e) {
+      console.warn('Could not set pixel ratio on GL context', e)
+    }
+
+    el.addEventListener('webglcontextlost', handleContextLost, false)
+    // cleanup when canvas is disposed
+    const cleanup = () => el.removeEventListener('webglcontextlost', handleContextLost)
+    // attach cleanup to state for r3f dispose cycle
+    return cleanup
+  }, [handleContextLost])
+
+  return (
+    <Canvas key={reloadKey} camera={{ position: [0, 1.6, 3] }} onCreated={onCreated}>
+      <ambientLight intensity={0.6} />
+      <directionalLight position={[0, 10, 5]} intensity={1} />
+      <Suspense fallback={null}>{children}</Suspense>
+    </Canvas>
+  )
+}
 
 const TextToSignPage = () => {
   const [inputText, setInputText] = useState('');
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [animationFrames, setAnimationFrames] = useState([]);
 
-  const handleTranslate = () => {
-    setIsPlaying(true);
-    // Here we'll add the actual translation logic later
-  };
+  const handleTranslate = async () => {
+    if (!inputText.trim()) return
+    try {
+      // Call backend API
+      const res = await fetch('http://localhost:5000/text-to-sign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: inputText.trim().toLowerCase() })
+      })
+      // Safely parse JSON - some error responses may be empty
+      let data = null
+      try {
+        data = await res.json()
+      } catch (e) {
+        data = { error: 'Invalid response from server' }
+      }
+      if (res.ok && data.animation) {
+        setAnimationFrames(data.animation)
+        setIsPlaying(true)
+      } else {
+        alert(data.error || 'Animation not found')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Failed to fetch animation')
+    }
+  }
 
   const handlePause = () => {
     setIsPlaying(false);
@@ -17,7 +103,7 @@ const TextToSignPage = () => {
 
   const handleReset = () => {
     setIsPlaying(false);
-    // Reset animation logic will go here
+    setAnimationFrames([])
   };
 
   return (
@@ -73,14 +159,15 @@ const TextToSignPage = () => {
           
           {/* Avatar Container */}
           <div className="w-full h-[400px] rounded-lg border-2 border-yellow-400 bg-gray-700 mb-6 flex items-center justify-center">
-            {/* Avatar placeholder - We'll add the actual avatar component later */}
-            <div className="text-gray-400">
-              {isPlaying ? (
-                <div className="animate-pulse">Signing...</div>
-              ) : (
-                <div>Enter text and click translate to begin</div>
-              )}
-            </div>
+            {animationFrames && animationFrames.length > 0 ? (
+              <div className="w-full h-full">
+                <CanvasWrapper>
+                  <PoseAvatarViewer glbPath={femaleGLB} animationFrames={animationFrames} play={isPlaying} />
+                </CanvasWrapper>
+              </div>
+            ) : (
+              <div className="text-gray-400">Enter text and click translate to begin</div>
+            )}
           </div>
 
           {/* Playback Controls */}
