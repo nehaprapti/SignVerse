@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FaPlay, FaPause, FaRedo } from 'react-icons/fa';
 import PoseAvatarViewer from "../components/PoseAvatarViewer";
-import femaleGLB from '../assets/male.glb'
+import femaleGLB from '../assets/female.glb'
 import { Canvas } from '@react-three/fiber'
 import { Suspense } from 'react'
 
@@ -27,8 +27,7 @@ function CanvasWrapper({ children }: { children: any }) {
       state.gl.setPixelRatio(capped)
       // optionally disable antialias for lower cost
       if (state.gl.getContext) {
-        const ctx = state.gl.getContext()
-        // no-op fallback; some contexts may not expose attributes
+        try { state.gl.getContext() } catch {}
       }
       console.log(`[Canvas] set pixel ratio to ${capped.toFixed(2)}`)
     } catch (e) {
@@ -73,10 +72,12 @@ const TextToSignPage = () => {
     if (!inputText.trim()) return
     try {
       // Call backend API
+      const requested = inputText.trim().toLowerCase()
+      console.log('[TextToSign] requesting animation for:', requested)
       const res = await fetch('http://localhost:5000/text-to-sign', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: inputText.trim().toLowerCase() })
+        body: JSON.stringify({ text: requested })
       })
       // Safely parse JSON - some error responses may be empty
       let data = null
@@ -86,9 +87,16 @@ const TextToSignPage = () => {
         data = { error: 'Invalid response from server' }
       }
       if (res.ok && data.animation) {
+        console.log('[TextToSign] animation frames received:', (data.animation || []).length)
         setAnimationFrames(data.animation)
         setIsPlaying(true)
+        setCurrentWord(requested)
       } else {
+        console.warn('[TextToSign] backend error or no animation:', data)
+        // Clear any previous animation so the avatar doesn't keep playing the old sign
+        setAnimationFrames([])
+        setIsPlaying(false)
+        setCurrentWord(null)
         alert(data.error || 'Animation not found')
       }
     } catch (err) {
@@ -104,7 +112,10 @@ const TextToSignPage = () => {
   const handleReset = () => {
     setIsPlaying(false);
     setAnimationFrames([])
+    setCurrentWord(null)
   };
+
+  const [currentWord, setCurrentWord] = useState<string | null>(null)
 
   return (
     <section className="bg-gray-900 text-white min-h-screen flex items-center justify-center px-6 py-10">
@@ -167,6 +178,16 @@ const TextToSignPage = () => {
               </div>
             ) : (
               <div className="text-gray-400">Enter text and click translate to begin</div>
+            )}
+          </div>
+
+          <div className="text-sm text-gray-300">
+            {currentWord ? (
+              <>
+                Loaded: <span className="font-semibold text-yellow-300">{currentWord}</span> — Frames: <span className="font-mono">{animationFrames?.length ?? 0}</span>
+              </>
+            ) : (
+              <span>No animation loaded</span>
             )}
           </div>
 

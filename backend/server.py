@@ -26,5 +26,17 @@ def text_to_sign():
         animation_data = json.load(f)
     return jsonify({'animation': animation_data})
 
+
+@app.route('/animations/<name>', methods=['GET'])
+def get_animation(name):
+    # allow fetching e.g. /animations/accept to return the JSON directly
+    safe = name.strip().lower()
+    filename = f"{safe}_animation.json"
+    filepath = os.path.join(ANIMATION_DIR, filename)
+    if not os.path.exists(filepath):
+        return jsonify({'error': 'Not found'}), 404
+    with open(filepath, 'r', encoding='utf-8') as f:
+        return f.read(), 200, {'Content-Type': 'application/json'}
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
